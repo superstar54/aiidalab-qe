@@ -11,7 +11,7 @@ from aiida.tools.query.calculation import CalculationQueryBuilder
 class WorkChainSelector(ipw.HBox):
 
     # The PK of a 'aiida.workflows:quantumespresso.pw.bands' WorkChainNode.
-    value = traitlets.Int(allow_none=True)
+    value = traitlets.Unicode(allow_none=True)
 
     # When this trait is set to a positive value, the work chains are automatically
     # refreshed every `auto_refresh_interval` seconds.

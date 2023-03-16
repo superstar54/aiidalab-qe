@@ -10,8 +10,8 @@ import os
 import ipywidgets as ipw
 import traitlets
 from aiida.common import NotExistent
-from aiida.engine import ProcessBuilderNamespace, ProcessState, submit
-from aiida.orm import WorkChainNode, load_code, load_node
+from aiida.engine import ProcessBuilderNamespace
+from aiida.orm import load_code, load_node
 from aiida.plugins import DataFactory
 from aiida_quantumespresso.common.types import ElectronicType, RelaxType, SpinType
 from aiida_quantumespresso.workflows.pw.base import PwBaseWorkChain
@@ -471,7 +471,8 @@ class SubmitQeAppWorkChainStep(ipw.VBox, WizardAppWidgetStep):
     MAX_MPI_PER_POOL = 20
 
     input_structure = traitlets.Instance(StructureData, allow_none=True)
-    process = traitlets.Instance(WorkChainNode, allow_none=True)
+    # process = traitlets.Instance(WorkChainNode, allow_none=True)
+    process = traitlets.Unicode(allow_none=True)
     previous_step_state = traitlets.UseEnum(WizardAppWidgetStep.State)
     workchain_settings = traitlets.Instance(WorkChainSettings, allow_none=True)
     kpoints_settings = traitlets.Instance(KpointSettings, allow_none=True)
@@ -890,9 +891,12 @@ class SubmitQeAppWorkChainStep(ipw.VBox, WizardAppWidgetStep):
         update_builder(builder, resources, self.parallelization.npools.value)
 
         with self.hold_trait_notifications():
-            self.process = submit(builder)
+            from aiidalab_qe.rest_api import restapi_submit
+
+            # self.process = submit(builder)
+            self.process = restapi_submit(builder)
             # Set the builder parameters on the work chain
-            self.process.base.extras.set("builder_parameters", parameters)
+            # self.process.base.extras.set("builder_parameters", parameters)
 
     def reset(self):
         with self.hold_trait_notifications():
@@ -939,23 +943,22 @@ class ViewQeAppWorkChainStatusAndResultsStep(ipw.VBox, WizardAppWidgetStep):
         self.process = None
 
     def _update_state(self):
+        from aiidalab_qe.rest_api import restapi_load_node
+
         if self.process is None:
             self.state = self.State.INIT
         else:
-            process = load_node(self.process)
-            process_state = process.process_state
+            process = restapi_load_node(self.process)
+            process_state = process["attributes"]["process_state"]
             if process_state in (
-                ProcessState.CREATED,
-                ProcessState.RUNNING,
-                ProcessState.WAITING,
+                "created",
+                "running",
+                "waiting",
             ):
                 self.state = self.State.ACTIVE
-            elif (
-                process_state in (ProcessState.EXCEPTED, ProcessState.KILLED)
-                or process.is_failed
-            ):
+            elif process_state in ("excepted", "killed") or process.is_failed:
                 self.state = self.State.FAIL
-            elif process.is_finished_ok:
+            elif process_state in ("finished"):
                 self.state = self.State.SUCCESS
 
     @traitlets.observe("process")

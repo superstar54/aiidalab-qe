@@ -1,0 +1,7 @@
+[project]
+name = 'aiidalab-qe-workchain'
+dynamic = ['version']
+description = 'The official AiiDA plugin for Quantum ESPRESSO'
+
+[project.entry-points.'aiida.workflows']
+'aiidalab_qe_workchain.base' = 'aiidalab_qe_workchain:QeAppWorkChain'

@@ -161,6 +161,8 @@ class QEApp:
         )
 
     def display(self):
+        # we have a conflict there
+        # this line is not work, but needed by pre-commit
         from IPython import display
 
         app_with_work_chain_selector = ipw.VBox(

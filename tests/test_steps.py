@@ -47,6 +47,8 @@ def test_steps():
     # step 3
     #
     s3 = app.steps.steps[2][1]
+    assert s3.previous_step_state == was.State.SUCCESS
+    assert s3.state == s3.State.CONFIGURED
     s3.resources_config.num_cpus.value = 4
     assert s3.resources_config.num_cpus.value == 4
     s3.submit()

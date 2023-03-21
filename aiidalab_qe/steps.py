@@ -623,7 +623,7 @@ class SubmitQeAppWorkChainStep(ipw.VBox, WizardAppWidgetStep):
             return
 
         # Process is already running.
-        if self.process is not None:
+        if self.process is not None and self.process != "":
             self.state = self.State.SUCCESS
             return
 
@@ -632,9 +632,8 @@ class SubmitQeAppWorkChainStep(ipw.VBox, WizardAppWidgetStep):
             self._submission_blockers = blockers
             self.state = self.State.READY
             return
-
         self._submission_blockers = []
-        self.state = self.state.CONFIGURED
+        self.state = self.State.CONFIGURED
 
     def _toggle_install_widgets(self, change):
         if change["new"]:
@@ -749,15 +748,19 @@ class SubmitQeAppWorkChainStep(ipw.VBox, WizardAppWidgetStep):
 
     @traitlets.observe("process")
     def _observe_process(self, change):
+        from aiidalab_qe.rest_api import restapi_get_inputs
+
         with self.hold_trait_notifications():
             process_node = change["new"]
             if process_node is not None:
-                self.input_structure = process_node.inputs.structure
-                builder_parameters = process_node.base.extras.get(
-                    "builder_parameters", None
-                )
-                if builder_parameters is not None:
-                    self.set_selected_codes(builder_parameters)
+                inputs = restapi_get_inputs(process_node)
+                print(inputs["structure"])
+                # self.input_structure = process_node.inputs.structure
+                # builder_parameters = process_node.base.extras.get(
+                # "builder_parameters", None
+                # )
+                # if builder_parameters is not None:
+                # self.set_selected_codes(builder_parameters)
             self._update_state()
 
     def _on_submit_button_clicked(self, _):
@@ -895,6 +898,7 @@ class SubmitQeAppWorkChainStep(ipw.VBox, WizardAppWidgetStep):
 
             # self.process = submit(builder)
             self.process = restapi_submit(builder)
+            # TODO use PUT method
             # Set the builder parameters on the work chain
             # self.process.base.extras.set("builder_parameters", parameters)
 

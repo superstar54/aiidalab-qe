@@ -240,21 +240,60 @@ def restapi_submit(builder):
     return results["uuid"]
 
 
-def restapi_load_node(process_id: int) -> dict[str, t.Any]:
-    results = request(f"processes/{process_id}", method="GET")
+def restapi_load_node(process_uuid: str) -> dict[str, t.Any]:
+    results = request(f"processes/uuid/{process_uuid}", method="GET")
     return results
 
 
-def restapi_get_outputs(process_id: int) -> dict[str, t.Any]:
+def restapi_get_inputs(process_uuid: str) -> dict[str, t.Any]:
+    """Return a dictionary of the inputs of the process with the given ID.
+
+    :param process_uuid: The ID of the process.
+    :return: Dictionary of the inputs where keys are link labels and values are dictionaries containing the node's uuid
+        and attributes.
+    """
+    query = """
+        query function($process_uuid: String) {
+            node(uuid: $process_uuid) {
+                incoming {
+                    rows {
+                        node {
+                            uuid
+                            attributes
+                        }
+                        link {
+                            label
+                        }
+                    }
+                }
+            }
+        }
+    """
+    variables = {"process_uuid": process_uuid}
+    results = request("graphql", {"query": query, "variables": variables})
+
+    inputs = {}
+
+    for value in results["data"]["node"]["incoming"]["rows"]:
+        link_label = value["link"]["label"]
+        inputs[link_label] = {
+            "uuid": value["node"]["uuid"],
+            "attributes": value["node"]["attributes"],
+        }
+
+    return inputs
+
+
+def restapi_get_outputs(process_uuid: str) -> dict[str, t.Any]:
     """Return a dictionary of the outputs of the process with the given ID.
 
-    :param process_id: The ID of the process.
+    :param process_uuid: The ID of the process.
     :return: Dictionary of the outputs where keys are link labels and values are dictionaries containing the node's uuid
         and attributes.
     """
     query = """
-        query function($process_id: Int) {
-            node(id: $process_id) {
+        query function($process_uuid: String) {
+            node(uuid: $process_uuid) {
                 outgoing {
                     rows {
                         node {
@@ -269,7 +308,7 @@ def restapi_get_outputs(process_id: int) -> dict[str, t.Any]:
             }
         }
     """
-    variables = {"process_id": process_id}
+    variables = {"process_uuid": process_uuid}
     results = request("graphql", {"query": query, "variables": variables})
 
     outputs = {}
@@ -285,4 +324,16 @@ def restapi_get_outputs(process_id: int) -> dict[str, t.Any]:
 
 
 if __name__ == "__main__":
-    restapi_submit()  # pylint: disable=no-value-for-parameter
+    # restapi_submit()  # pylint: disable=no-value-for-parameter
+    from pprint import pprint
+
+    process = "ecbeec0d-316a-4b6a-bbd1-0864010b0db1"
+    inputs = restapi_get_inputs(process)
+    print("=" * 60)
+    pprint(inputs)
+    outputs = restapi_get_outputs(process)
+    print("=" * 60)
+    pprint(outputs)
+    node = restapi_load_node(process)
+    print("=" * 60)
+    print(node)

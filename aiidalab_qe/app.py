@@ -11,13 +11,7 @@ from aiidalab_widgets_base import (
     WizardAppWidget,
     WizardAppWidgetStep,
 )
-from aiidalab_widgets_base.bug_report import (
-    install_create_github_issue_exception_handler,
-)
-from importlib_resources import files
-from jinja2 import Environment
 
-from aiidalab_qe import static
 from aiidalab_qe.process import WorkChainSelector
 from aiidalab_qe.steps import (
     ConfigureQeAppWorkChainStep,
@@ -25,23 +19,12 @@ from aiidalab_qe.steps import (
     ViewQeAppWorkChainStatusAndResultsStep,
 )
 from aiidalab_qe.structures import Examples, StructureSelectionStep
-from aiidalab_qe.version import __version__
 
 OptimadeQueryWidget.title = "OPTIMADE"  # monkeypatch
-env = Environment()
-
-template = files(static).joinpath("welcome.jinja").read_text()
-style = files(static).joinpath("style.css").read_text()
-welcome_message = ipw.HTML(env.from_string(template).render(style=style))
-footer = ipw.HTML(
-    f'<p style="text-align:right;">Copyright (c) 2022 AiiDAlab team (EPFL)&#8195Version: {__version__}</p>'
-)
 
 
 class QEApp:
     def __init__(self) -> None:
-        pass
-
         # Create the application steps
         structure_manager_widget = StructureManagerWidget(
             importers=[
@@ -159,23 +142,4 @@ class QEApp:
             (self.work_chain_selector, "value"),
             transform=lambda node: None if node is None else node,
         )
-
-    def display(self):
-        # we have a conflict there
-        # this line is not work, but needed by pre-commit
-        from IPython import display
-
-        app_with_work_chain_selector = ipw.VBox(
-            children=[self.work_chain_selector, self.steps]
-        )
-        output = ipw.Output()
-        install_create_github_issue_exception_handler(
-            output,
-            url="https://github.com/aiidalab/aiidalab-qe/issues/new",
-            labels=("bug", "automated-report"),
-        )
-
-        with output:
-            display(welcome_message, app_with_work_chain_selector, footer)
-
-        display(output)
+        self.work_chain = ipw.VBox(children=[self.work_chain_selector, self.steps])

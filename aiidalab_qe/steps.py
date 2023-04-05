@@ -748,7 +748,7 @@ class SubmitQeAppWorkChainStep(ipw.VBox, WizardAppWidgetStep):
 
     @traitlets.observe("process")
     def _observe_process(self, change):
-        from aiidalab_qe.rest_api import restapi_get_inputs
+        from aiidalab_restapi.api import restapi_get_inputs
 
         with self.hold_trait_notifications():
             process_node = change["new"]
@@ -894,7 +894,7 @@ class SubmitQeAppWorkChainStep(ipw.VBox, WizardAppWidgetStep):
         update_builder(builder, resources, self.parallelization.npools.value)
 
         with self.hold_trait_notifications():
-            from aiidalab_qe.rest_api import restapi_submit
+            from aiidalab_restapi.api import restapi_submit
 
             # self.process = submit(builder)
             self.process = restapi_submit(builder)
@@ -947,7 +947,7 @@ class ViewQeAppWorkChainStatusAndResultsStep(ipw.VBox, WizardAppWidgetStep):
         self.process = None
 
     def _update_state(self):
-        from aiidalab_qe.rest_api import restapi_load_node
+        from aiidalab_restapi.api import restapi_load_node
 
         if self.process is None:
             self.state = self.State.INIT

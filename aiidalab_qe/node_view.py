@@ -19,6 +19,7 @@ import traitlets
 from aiida.cmdline.utils.common import get_workchain_report
 from aiida.common import LinkType
 from aiida.orm import CalcJobNode, Node, ProjectionData, WorkChainNode
+from aiidalab_restapi.api import restapi_get_inputs_by_pk, restapi_get_outputs_by_pk
 from aiidalab_widgets_base import ProcessMonitor, register_viewer_widget
 from aiidalab_widgets_base.viewers import StructureDataViewer
 from ase import Atoms
@@ -26,7 +27,17 @@ from filelock import FileLock, Timeout
 from IPython.display import HTML, display
 from jinja2 import Environment
 from monty.json import jsanitize
-from traitlets import Instance, Int, List, Unicode, Union, default, observe, validate
+from traitlets import (
+    Dict,
+    Instance,
+    Int,
+    List,
+    Unicode,
+    Union,
+    default,
+    observe,
+    validate,
+)
 from widget_bandsplot import BandsPlotWidget
 
 from aiidalab_qe import static
@@ -35,7 +46,7 @@ from aiidalab_qe.report import generate_report_dict
 
 class MinimalStructureViewer(ipw.VBox):
 
-    structure = Union([Instance(Atoms), Instance(Node)], allow_none=True)
+    structure = Union([Dict(), Instance(Atoms), Instance(Node)], allow_none=True)
     _displayed_structure = Instance(Atoms, allow_none=True, read_only=True)
 
     background = Unicode()
@@ -69,11 +80,16 @@ class MinimalStructureViewer(ipw.VBox):
     @validate("structure")
     def _valid_structure(self, change):  # pylint: disable=no-self-use
         """Update structure."""
+        from aiidalab_restapi.utils import create_structure
+
         structure = change["value"]
 
         if structure is None:
             return None  # if no structure provided, the rest of the code can be skipped
 
+        if isinstance(structure, dict):
+            structure = create_structure(structure)
+            return structure.get_ase()
         if isinstance(structure, Atoms):
             return structure
         if isinstance(structure, Node):
@@ -110,15 +126,15 @@ class MinimalStructureViewer(ipw.VBox):
 
 
 def export_bands_data(work_chain_node, fermi_energy=None):
-    if "band_structure" in work_chain_node.outputs:
+    if "band_structure" in work_chain_node["outputs"]:
         data = json.loads(
-            work_chain_node.outputs.band_structure._exportcontent(
+            work_chain_node["outputs"]["band_structure"]._exportcontent(
                 "json", comments=False
             )[0]
         )
         # The fermi energy from band calculation is not robust.
         data["fermi_level"] = (
-            fermi_energy or work_chain_node.outputs.band_parameters["fermi_energy"]
+            fermi_energy or work_chain_node["outputs"].band_parameters["fermi_energy"]
         )
         return [
             jsanitize(data),
@@ -311,8 +327,8 @@ class WorkChainOutputs(ipw.VBox):
     def __init__(self, node, export_dir=None, **kwargs):
         self.export_dir = Path.cwd().joinpath("exports")
 
-        if node.process_label != "QeAppWorkChain":
-            raise KeyError(str(node.node_type))
+        if node["attributes"]["process_label"] != "QeAppWorkChain":
+            raise KeyError(str(node["node_type"]))
 
         self.node = node
 
@@ -374,7 +390,9 @@ class WorkChainOutputs(ipw.VBox):
 
     def _download_archive(self, _):
 
-        fn_archive = self.export_dir.joinpath(str(self.node.uuid)).with_suffix(".zip")
+        fn_archive = self.export_dir.joinpath(str(self.node["uuid"])).with_suffix(
+            ".zip"
+        )
         fn_lockfile = fn_archive.with_suffix(".lock")
 
         try:
@@ -397,7 +415,7 @@ class WorkChainOutputs(ipw.VBox):
         finally:
             self.set_trait("_busy", False)
 
-        id = f"dl_{self.node.uuid}"
+        id = f"dl_{self.node['uuid']}"
 
         display(
             HTML(
@@ -506,17 +524,22 @@ class WorkChainViewer(ipw.VBox):
     _results_shown = traitlets.Set()
 
     def __init__(self, node, **kwargs):
-        if node.process_label != "QeAppWorkChain":
+        if node["attributes"]["process_label"] != "QeAppWorkChain":
             super().__init__()
             return
 
+        # get inputs and outputs
+        inputs = restapi_get_inputs_by_pk(node["id"])
+        outputs = restapi_get_outputs_by_pk(node["id"])
+        node["inputs"] = inputs
+        node["outputs"] = outputs
         self.node = node
 
         self.title = ipw.HTML(
             f"""
             <hr style="height:2px;background-color:#2097F3;">
-            <h4>QE App Workflow (pk: {self.node.pk}) &mdash;
-                {self.node.inputs.structure.get_formula()}
+            <h4>QE App Workflow (pk: {self.node["id"]}) &mdash;
+                {self.node["inputs"]["structure"]["extras"]["formula"]}
             </h4>
             """
         )
@@ -574,24 +597,25 @@ class WorkChainViewer(ipw.VBox):
 
     def _update_view(self):
         with self.hold_trait_notifications():
-            if self.node.is_finished:
+            if "exit_status" in self.node["attributes"]:
                 self._show_workflow_output()
             if (
                 "structure" not in self._results_shown
-                and "structure" in self.node.outputs
+                and "structure" in self.node["outputs"]
             ):
                 self._show_structure()
                 self._results_shown.add("structure")
 
             if "electronic_structure" not in self._results_shown and (
-                "band_structure" in self.node.outputs or "dos" in self.node.outputs
+                "band_structure" in self.node["outputs"]
+                or "dos" in self.node["outputs"]
             ):
                 self._show_electronic_structure()
                 self._results_shown.add("electronic_structure")
 
     def _show_structure(self):
         self._structure_view = StructureDataViewer(
-            structure=self.node.outputs.structure
+            structure=self.node["outputs"]["structure"]
         )
         self.result_tabs.children[1].children = [self._structure_view]
         self.result_tabs.set_title(1, "Final Geometry")

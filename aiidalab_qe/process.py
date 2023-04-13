@@ -4,14 +4,37 @@ from threading import Event, Lock, Thread
 
 import ipywidgets as ipw
 import traitlets
-from aiida.orm import load_node
-from aiida.tools.query.calculation import CalculationQueryBuilder
+
+
+def get_ctime(time_str):
+    """"""
+    from datetime import datetime, timezone
+
+    time_obj = datetime.fromisoformat(time_str)
+    time_diff = datetime.now(timezone.utc) - time_obj
+    total_seconds = int(time_diff.total_seconds())
+    # Determine the largest unit
+    if total_seconds >= 60 * 60 * 24:
+        unit = "d"
+        val = total_seconds // (60 * 60 * 24)
+    elif total_seconds >= 60 * 60:
+        unit = "h"
+        val = total_seconds // (60 * 60)
+    elif total_seconds >= 60:
+        unit = "min"
+        val = total_seconds // 60
+    else:
+        unit = "s"
+        val = total_seconds
+
+    # Display the largest unit and value
+    return f"{val} {unit}"
 
 
 class WorkChainSelector(ipw.HBox):
 
     # The PK of a 'aiida.workflows:quantumespresso.pw.bands' WorkChainNode.
-    value = traitlets.Unicode(allow_none=True)
+    value = traitlets.Int(allow_none=True)
 
     # When this trait is set to a positive value, the work chains are automatically
     # refreshed every `auto_refresh_interval` seconds.
@@ -69,49 +92,28 @@ class WorkChainSelector(ipw.HBox):
 
     @classmethod
     def find_work_chains(cls):
-        builder = CalculationQueryBuilder()
-        filters = builder.get_filters(
-            process_label="QeAppWorkChain",
+        from aiidalab_restapi.api import restapi_get_node_by_filter
+
+        # TODO add extra info: relax, bands, pdos
+        # I donn't know it not show all of the result, so I add a time here, will be removed later.
+        results = restapi_get_node_by_filter(
+            "process_type ILIKE '%aiidalab_qe_workchain%'  & mtime >= 2023-03-01"
         )
-        query_set = builder.get_query_set(
-            filters=filters,
-            order_by={"ctime": "desc"},
-        )
-        projected = builder.get_projected(
-            query_set, projections=["pk", "ctime", "state"]
-        )
+        results.reverse()
 
-        for process in projected[1:]:
-            workchain = load_node(process[0])
-            formula = workchain.inputs.structure.get_formula()
+        for data in results:
+            formula = data["incoming"]["rows"][0]["node"]["extras"]["formula"]
+            state = data["attributes"].get("process_state", "except")
 
-            properties = []
-            if "pdos" in workchain.inputs:
-                properties.append("pdos")
-            if "bands" in workchain.inputs:
-                properties.append("bands")
-
-            if "relax" in workchain.inputs:
-                builder_parameters = workchain.get_extra("builder_parameters", {})
-                relax_type = builder_parameters.get("relax_type")
-
-                if relax_type != "none":
-                    relax_info = "structure is relaxed"
-                else:
-                    relax_info = "static SCF calculation on structure"
-            else:
-                relax_info = "structure is not relaxed"
-
-            if not properties:
-                properties_info = ""
-            else:
-                properties_info = f"properties on {', '.join(properties)}"
+            ctime = get_ctime(data["ctime"])
 
             yield cls.WorkChainData(
                 formula=formula,
-                relax_info=relax_info,
-                properties_info=properties_info,
-                *process,
+                relax_info="relax: none",
+                properties_info="properties: none",
+                pk=data["id"],
+                ctime=ctime,
+                state=state,
             )
 
     @traitlets.default("busy")

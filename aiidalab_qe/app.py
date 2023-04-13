@@ -1,5 +1,4 @@
 import ipywidgets as ipw
-from aiida.orm import load_node
 from aiidalab_widgets_base import (
     BasicCellEditor,
     BasicStructureEditor,
@@ -113,6 +112,9 @@ class QEApp:
         self.work_chain_selector = WorkChainSelector(layout=ipw.Layout(width="auto"))
 
         def _observe_process_selection(change):
+            from aiidalab_restapi.api import restapi_get_inputs_by_pk
+            from aiidalab_restapi.utils import create_structure
+
             if change["old"] == change["new"]:
                 return
             pk = change["new"]
@@ -120,21 +122,18 @@ class QEApp:
                 self.steps.reset()
                 self.steps.selected_index = 0
             else:
-                process = load_node(pk)
+                inputs = restapi_get_inputs_by_pk(pk)
+                structure = create_structure(inputs["structure"])
                 with structure_manager_widget.hold_sync():
                     with structure_selection_step.hold_sync():
                         self.steps.selected_index = 3
-                        structure_manager_widget.input_structure = (
-                            process.inputs.structure
-                        )
-                        structure_selection_step.structure = process.inputs.structure
-                        structure_selection_step.confirmed_structure = (
-                            process.inputs.structure
-                        )
+                        structure_manager_widget.input_structure = structure
+                        structure_selection_step.structure = structure
+                        structure_selection_step.confirmed_structure = structure
                         configure_qe_app_work_chain_step.state = (
                             WizardAppWidgetStep.State.SUCCESS
                         )
-                        submit_qe_app_work_chain_step.process = process
+                        submit_qe_app_work_chain_step.process = pk
 
         self.work_chain_selector.observe(_observe_process_selection, "value")
         ipw.dlink(

@@ -353,7 +353,7 @@ class CalcJobNodeViewerWidget(ipw.VBox):
         self.output_follower = CalcJobOutputFollower()
         self.log_output = LogOutputWidget()
 
-        self.output_follower.calcjob_uuid = self.calcjob.uuid
+        self.output_follower.calcjob_uuid = self.calcjob["uuid"]
         self.output_follower.observe(self._observe_output_follower_lineno, ["lineno"])
 
         super().__init__(

@@ -15,6 +15,7 @@ from aiida.orm import load_code, load_node
 from aiida.plugins import DataFactory
 from aiida_quantumespresso.common.types import ElectronicType, RelaxType, SpinType
 from aiida_quantumespresso.workflows.pw.base import PwBaseWorkChain
+from aiidalab_restapi.api import restapi_load_node_by_pk
 from aiidalab_widgets_base import (
     AiidaNodeViewWidget,
     ComputationalResourcesWidget,
@@ -472,7 +473,7 @@ class SubmitQeAppWorkChainStep(ipw.VBox, WizardAppWidgetStep):
 
     input_structure = traitlets.Instance(StructureData, allow_none=True)
     # process = traitlets.Instance(WorkChainNode, allow_none=True)
-    process = traitlets.Unicode(allow_none=True)
+    process = traitlets.Int(allow_none=True)
     previous_step_state = traitlets.UseEnum(WizardAppWidgetStep.State)
     workchain_settings = traitlets.Instance(WorkChainSettings, allow_none=True)
     kpoints_settings = traitlets.Instance(KpointSettings, allow_none=True)
@@ -623,7 +624,7 @@ class SubmitQeAppWorkChainStep(ipw.VBox, WizardAppWidgetStep):
             return
 
         # Process is already running.
-        if self.process is not None and self.process != "":
+        if self.process is not None and self.process != 0:
             self.state = self.State.SUCCESS
             return
 
@@ -748,14 +749,16 @@ class SubmitQeAppWorkChainStep(ipw.VBox, WizardAppWidgetStep):
 
     @traitlets.observe("process")
     def _observe_process(self, change):
-        from aiidalab_restapi.api import restapi_get_inputs
+        from aiidalab_restapi.api import restapi_get_inputs_by_pk
+        from aiidalab_restapi.utils import create_structure
 
         with self.hold_trait_notifications():
             process_node = change["new"]
             if process_node is not None:
-                inputs = restapi_get_inputs(process_node)
-                print(inputs["structure"])
-                # self.input_structure = process_node.inputs.structure
+                inputs = restapi_get_inputs_by_pk(process_node)
+                structure = create_structure(inputs["structure"])
+                # print(inputs["structure"])
+                self.input_structure = structure
                 # builder_parameters = process_node.base.extras.get(
                 # "builder_parameters", None
                 # )
@@ -898,6 +901,9 @@ class SubmitQeAppWorkChainStep(ipw.VBox, WizardAppWidgetStep):
 
             # self.process = submit(builder)
             self.process = restapi_submit(builder)
+            # print("process: ", self.process)
+            # process_node = restapi_load_node_by_pk(self.process)
+            # print(process_node)
             # TODO use PUT method
             # Set the builder parameters on the work chain
             # self.process.base.extras.set("builder_parameters", parameters)
@@ -910,7 +916,7 @@ class SubmitQeAppWorkChainStep(ipw.VBox, WizardAppWidgetStep):
 
 class ViewQeAppWorkChainStatusAndResultsStep(ipw.VBox, WizardAppWidgetStep):
 
-    process = traitlets.Unicode(allow_none=True)
+    process = traitlets.Int(allow_none=True)
 
     def __init__(self, **kwargs):
         self.process_tree = ProcessNodesTreeWidget()
@@ -947,12 +953,11 @@ class ViewQeAppWorkChainStatusAndResultsStep(ipw.VBox, WizardAppWidgetStep):
         self.process = None
 
     def _update_state(self):
-        from aiidalab_restapi.api import restapi_load_node
 
         if self.process is None:
             self.state = self.State.INIT
         else:
-            process = restapi_load_node(self.process)
+            process = restapi_load_node_by_pk(self.process)
             process_state = process["attributes"]["process_state"]
             if process_state in (
                 "created",
@@ -960,7 +965,10 @@ class ViewQeAppWorkChainStatusAndResultsStep(ipw.VBox, WizardAppWidgetStep):
                 "waiting",
             ):
                 self.state = self.State.ACTIVE
-            elif process_state in ("excepted", "killed") or process.is_failed:
+            elif (
+                process_state in ("excepted", "killed")
+                or process["attributes"]["exit_status"] != 0
+            ):
                 self.state = self.State.FAIL
             elif process_state in ("finished"):
                 self.state = self.State.SUCCESS

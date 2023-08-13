@@ -63,7 +63,10 @@ class QeAppWorkChain(WorkChain):
                     "help": f"Inputs for the {name} plugin.",
                 },
             )
-            spec.expose_outputs(plugin_workchain, namespace=name)
+            spec.expose_outputs(plugin_workchain,
+                                namespace=name, 
+                                namespace_options={"required": False},
+                                )
             spec.exit_code(
                 404 + 1,
                 f"ERROR_SUB_PROCESS_FAILED_{name}",

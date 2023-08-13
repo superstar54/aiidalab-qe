@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 """Panel for Bands plugin.
 
-Authors:
-
-    * Xing Wang <xing.wang@psi.ch>
 """
 import ipywidgets as ipw
 from aiida.orm import Int, Str

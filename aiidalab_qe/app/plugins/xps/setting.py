@@ -103,7 +103,7 @@ class Setting(Panel):
             value="xch_smear",
         )
         self.pseudo_group = ipw.Dropdown(
-            options=["pseudo_demo_pbe"],
+            options=["pseudo_demo_pbe", "pseudo_demo_pbesol"],
             value="pseudo_demo_pbe",
             description="Group:",
             disabled=False,
@@ -222,17 +222,18 @@ class Setting(Panel):
                             description=orbital,
                             indent=False,
                             value=False,
-                            layout=ipw.Layout(max_width="50%"),
+                            layout=ipw.Layout(max_width="100%"),
                         ),
                     )
             else:
                 checkbox_list += (
                     ipw.Checkbox(
-                        description=ele,
+                        description=f"{ele}, not supported by the selected pseudo group",
                         indent=False,
                         value=False,
-                        disable=True,
-                        layout=ipw.Layout(max_width="50%"),
+                        disabled=True,
+                        style={"description_width": "initial"},
+                        layout=ipw.Layout(max_width="100%"),
                     ),
                 )
         self.elements_list.children = checkbox_list

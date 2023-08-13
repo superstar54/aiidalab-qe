@@ -24,7 +24,7 @@ def get_builder(codes, structure, parameters):
         **parameters,
     )
     # pop the inputs that are exclueded from the expose_inputs
-    builder.pop("structure", None)
+    # builder.pop("structure", None)
     builder.pop("clean_workdir", None)
     return builder
 

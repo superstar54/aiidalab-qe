@@ -273,7 +273,7 @@ def initial_magnetic_moments_generator(structure_data_object):
 # so I pass the pw_code etc to the parameters list
 @pytest.fixture
 def app(pw_code, dos_code, projwfc_code, sssp):
-    from aiidalab_qe.app import QEApp
+    from aiidalab_qe.app.app import QEApp
 
     app = QEApp(qe_auto_setup=False)
 
@@ -504,8 +504,6 @@ def generate_qeapp_workchain(
         builder, ui_parameters = s3._create_builder()
         inputs = builder._inputs()
         # override the workflow
-        inputs["properties"]["bands"] = run_bands
-        inputs["properties"]["pdos"] = run_pdos
         ui_parameters["workflow"]["properties"]["bands"] = run_bands
         ui_parameters["workflow"]["properties"]["pdos"] = run_pdos
         wkchain = generate_workchain(QeAppWorkChain, inputs)

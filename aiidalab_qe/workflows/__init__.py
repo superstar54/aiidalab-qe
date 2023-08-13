@@ -13,6 +13,7 @@ StructureData = DataFactory("core.structure")
 # I removed the `validate_properties`, because the `properties` to be
 # calculated are not fixed anymore. It depends on the installed plugins.
 
+
 # load entry points
 def get_entries(entry_point_name="aiidalab_qe.configuration"):
     from importlib.metadata import entry_points
@@ -35,6 +36,7 @@ def get_entry_items(entry_point_name, item_name="outline"):
 
 entries = get_entry_items("aiidalab_qe.property", "workchain")
 
+
 class QeAppWorkChain(WorkChain):
     """WorkChain designed to calculate the requested properties in the AiiDAlab Quantum ESPRESSO app."""
 
@@ -47,6 +49,8 @@ class QeAppWorkChain(WorkChain):
                    help='The inputs structure.')
         spec.input('clean_workdir', valid_type=orm.Bool, default=lambda: orm.Bool(False),
                    help='If `True`, work directories of all called calculation will be cleaned at the end of execution.')
+        spec.input('need_relax', valid_type=orm.Bool, default=lambda: orm.Bool(True),
+                   help='If `True`, run the relax workchain.', required=False)
         spec.expose_inputs(PwRelaxWorkChain, namespace='relax', exclude=('clean_workdir', 'structure', 'base_final_scf'),
                            namespace_options={'required': False, 'populate_defaults': False,
                                               'help': 'Inputs for the `PwRelaxWorkChain`, if not specified at all, the relaxation step is skipped.'})
@@ -64,7 +68,7 @@ class QeAppWorkChain(WorkChain):
                 },
             )
             spec.expose_outputs(plugin_workchain,
-                                namespace=name, 
+                                namespace=name,
                                 namespace_options={"required": False},
                                 )
             spec.exit_code(
@@ -97,22 +101,25 @@ class QeAppWorkChain(WorkChain):
         builder = cls.get_builder()
         # Set the structure.
         builder.structure = structure
-        protocol = parameters["basic"].pop("protocol", "moderate")
         codes = parameters.pop("codes", {})
         #
         # relax workchain
+        # here we need tell the workchain run relax or not
         if parameters["workflow"]["relax_type"] == "none":
-            parameters["workflow"]["properties"]["relax"] = False
-            builder.pop("relax", None)
+            builder.need_relax = orm.Bool(False)
         else:
-            parameters["workflow"]["properties"]["relax"] = True
-            relax_builder = get_relax_builder(codes, structure, parameters)
-            builder.relax = relax_builder
+            builder.need_relax = orm.Bool(True)
+        # we always keep the relax builder, so that we can read the
+        # parameters for the summary view.
+        relax_builder = get_relax_builder(codes, structure, parameters)
+        builder.relax = relax_builder
 
         # add plugin workchain
         for name, entry_point in entries.items():
             if parameters["workflow"]["properties"][name]:
-                plugin_builder = entry_point["get_builder"](codes, structure, parameters)
+                plugin_builder = entry_point["get_builder"](
+                    codes, structure, parameters
+                )
                 setattr(builder, name, plugin_builder)
             else:
                 builder.pop(name, None)
@@ -132,7 +139,7 @@ class QeAppWorkChain(WorkChain):
 
     def should_run_relax(self):
         """Check if the geometry of the input structure should be optimized."""
-        return "relax" in self.inputs
+        return self.inputs.need_relax
 
     def run_relax(self):
         """Run the `PwRelaxWorkChain`."""

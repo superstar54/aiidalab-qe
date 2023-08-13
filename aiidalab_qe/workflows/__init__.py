@@ -52,10 +52,11 @@ class QeAppWorkChain(WorkChain):
                                               'help': 'Inputs for the `PwRelaxWorkChain`, if not specified at all, the relaxation step is skipped.'})
         spec.expose_outputs(PwRelaxWorkChain, namespace='relax')
         for name, entry_point in entries.items():
-            plugin_workchain = entry_point[0]
+            plugin_workchain = entry_point["workchain"]
             spec.expose_inputs(
                 plugin_workchain,
                 namespace=name,
+                exclude=entry_point["exclude"],
                 namespace_options={
                     "required": False,
                     "populate_defaults": False,
@@ -108,7 +109,7 @@ class QeAppWorkChain(WorkChain):
         # add plugin workchain
         for name, entry_point in entries.items():
             if parameters["workflow"]["properties"][name]:
-                plugin_builder = entry_point[1](codes, structure, parameters)
+                plugin_builder = entry_point["get_builder"](codes, structure, parameters)
                 setattr(builder, name, plugin_builder)
             else:
                 builder.pop(name, None)
@@ -121,6 +122,7 @@ class QeAppWorkChain(WorkChain):
         """Perform the initial setup of the work chain, setup the input structure
         and the logic to determine which sub workchains to run.
         """
+        self.ctx.plugin_entries = entries
         self.ctx.current_structure = self.inputs.structure
         self.ctx.current_number_of_bands = None
         self.ctx.scf_parent_folder = None
@@ -170,14 +172,13 @@ class QeAppWorkChain(WorkChain):
 
     def run_plugin(self):
         """Run the plugin `WorkChain`."""
-        self.ctx.plugin_entries = entries
         plugin_running = {}
         self.report(f"Plugins: {entries}")
         for name, entry_point in entries.items():
             if not self.should_run_plugin(name):
                 continue
             self.report(f"Run plugin : {name}")
-            plugin_workchain = entry_point[0]
+            plugin_workchain = entry_point["workchain"]
             inputs = AttributeDict(
                 self.exposed_inputs(plugin_workchain, namespace=name)
             )
@@ -206,7 +207,7 @@ class QeAppWorkChain(WorkChain):
             # Attach the output nodes directly as outputs of the workchain.
             self.out_many(
                 self.exposed_outputs(
-                    workchain, entry_point[0], namespace=name
+                    workchain, entry_point["workchain"], namespace=name
                 )
             )
 

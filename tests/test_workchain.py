@@ -9,14 +9,14 @@ def test_qeapp_workchain(generate_qeapp_workchain):
     # generate structure for scf calculation
     #
     assert wkchain.should_run_relax() is True
-    assert wkchain.should_run_bands() is True
-    assert wkchain.should_run_pdos() is True
-    # run pdos and return the process
     wkchain.setup()
+    assert len(wkchain.ctx.plugin_entries) == 2
     # run relax and return the process
     relax_process = wkchain.run_relax()["workchain_relax"]
-    bands_process = wkchain.run_bands()["workchain_bands"]
-    pdos_process = wkchain.run_pdos()["workchain_pdos"]
+    # run plugin and return the process
+    processes = wkchain.run_plugin()
+    bands_process = processes["bands"]
+    pdos_process = processes["pdos"]
     # add test result
     result = orm.Dict({"energy": 0})
     result.store()

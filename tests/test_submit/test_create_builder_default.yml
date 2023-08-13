@@ -116,13 +116,9 @@ pdos:
           occupations: smearing
           smearing: cold
           tot_charge: 0.0
-properties:
-  bands: true
-  pdos: true
-  relax: true
 relax:
   base:
-    kpoints_distance: 0.15
+    kpoints_distance: 0.5
     kpoints_force_parity: false
     pw:
       parallelization:
@@ -133,12 +129,12 @@ relax:
           press_conv_thr: 0.5
         CONTROL:
           calculation: vc-relax
-          etot_conv_thr: 2.0e-05
-          forc_conv_thr: 0.0001
+          etot_conv_thr: 0.0002
+          forc_conv_thr: 0.001
           tprnfor: true
           tstress: true
         ELECTRONS:
-          conv_thr: 4.0e-10
+          conv_thr: 8.0e-10
           electron_maxstep: 80
           mixing_beta: 0.4
         SYSTEM:
@@ -150,4 +146,4 @@ relax:
           smearing: cold
   max_meta_convergence_iterations: 5
   meta_convergence: true
-  volume_convergence: 0.02
+  volume_convergence: 0.05

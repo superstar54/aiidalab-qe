@@ -35,4 +35,7 @@ def get_builder(codes, structure, parameters):
     return builder
 
 
-workchain_and_builder = [PwRelaxWorkChain, get_builder]
+workchain_and_builder = {"workchain": PwRelaxWorkChain,
+                         "exclude": ('clean_workdir', 'structure', 'base_final_scf'),
+                         "get_builder": get_builder,
+                         }

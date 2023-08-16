@@ -180,7 +180,7 @@ class Setting(Panel):
         }
         return parameters
 
-    def load_panel_value(self, input_dict):
+    def set_panel_value(self, input_dict):
         """Load a dictionary with the input parameters for the plugin."""
         self.pseudo_group.value = input_dict.get("pseudo_group", "pseudo_demo_pbe")
         self.core_hole_treatment.value = input_dict.get(

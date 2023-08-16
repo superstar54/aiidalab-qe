@@ -54,7 +54,8 @@ class QeAppWorkChain(WorkChain):
         spec.expose_inputs(PwRelaxWorkChain, namespace='relax', exclude=('clean_workdir', 'structure', 'base_final_scf'),
                            namespace_options={'required': False, 'populate_defaults': False,
                                               'help': 'Inputs for the `PwRelaxWorkChain`, if not specified at all, the relaxation step is skipped.'})
-        spec.expose_outputs(PwRelaxWorkChain, namespace='relax', required=False)
+        spec.expose_outputs(PwRelaxWorkChain, namespace='relax',
+                            namespace_options={"required": False})
         for name, entry_point in entries.items():
             plugin_workchain = entry_point["workchain"]
             spec.expose_inputs(

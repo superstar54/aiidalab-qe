@@ -76,6 +76,11 @@ class SubmitQeAppWorkChainStep(ipw.VBox, WizardAppWidgetStep):
             description="projwfc.x:",
             default_calc_job_plugin="quantumespresso.projwfc",
         )
+        #MB:
+        self.phonopy_code = ComputationalResourcesWidget(
+            description="phonopy:",
+            default_calc_job_plugin="phonopy.phonopy",
+        )
 
         self.resources_config = ResourceSelectionWidget()
         self.parallelization = ParallelizationSettings()
@@ -87,6 +92,8 @@ class SubmitQeAppWorkChainStep(ipw.VBox, WizardAppWidgetStep):
         self.pw_code.observe(self._update_resources, "value")
         self.dos_code.observe(self._update_state, "value")
         self.projwfc_code.observe(self._update_state, "value")
+        #MB:
+        self.phonopy_code.observe(self._update_state, "value")
 
         self.submit_button = ipw.Button(
             description="Submit",
@@ -126,6 +133,7 @@ class SubmitQeAppWorkChainStep(ipw.VBox, WizardAppWidgetStep):
                 self.pw_code,
                 self.dos_code,
                 self.projwfc_code,
+                self.phonopy_code, #MB
                 self.resources_config,
                 self.parallelization,
                 self.message_area,
@@ -365,6 +373,7 @@ class SubmitQeAppWorkChainStep(ipw.VBox, WizardAppWidgetStep):
             "pw": self.pw_code.value,
             "dos": self.dos_code.value,
             "projwfc": self.projwfc_code.value,
+            "phonopy": self.phonopy_code.value,
         }
         return codes
 

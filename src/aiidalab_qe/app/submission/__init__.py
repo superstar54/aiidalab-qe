@@ -76,6 +76,11 @@ class SubmitQeAppWorkChainStep(ipw.VBox, WizardAppWidgetStep):
             description="projwfc.x:",
             default_calc_job_plugin="quantumespresso.projwfc",
         )
+        
+        self.pp_code = ComputationalResourcesWidget(
+            description="pp.x:",
+            default_calc_job_plugin="quantumespresso.pp",
+        )
 
         self.resources_config = ResourceSelectionWidget()
         self.parallelization = ParallelizationSettings()
@@ -87,6 +92,7 @@ class SubmitQeAppWorkChainStep(ipw.VBox, WizardAppWidgetStep):
         self.pw_code.observe(self._update_resources, "value")
         self.dos_code.observe(self._update_state, "value")
         self.projwfc_code.observe(self._update_state, "value")
+        self.pp_code.observe(self._update_state, "value")
 
         self.submit_button = ipw.Button(
             description="Submit",
@@ -126,6 +132,7 @@ class SubmitQeAppWorkChainStep(ipw.VBox, WizardAppWidgetStep):
                 self.pw_code,
                 self.dos_code,
                 self.projwfc_code,
+                self.pp_code,
                 self.resources_config,
                 self.parallelization,
                 self.message_area,
@@ -229,6 +236,7 @@ class SubmitQeAppWorkChainStep(ipw.VBox, WizardAppWidgetStep):
                 "pw",
                 "dos",
                 "projwfc",
+                "pp",
             ]:
                 try:
                     code_widget = getattr(self, f"{code}_code")
@@ -365,6 +373,7 @@ class SubmitQeAppWorkChainStep(ipw.VBox, WizardAppWidgetStep):
             "pw": self.pw_code.value,
             "dos": self.dos_code.value,
             "projwfc": self.projwfc_code.value,
+            "pp": self.pp_code.value,
         }
         return codes
 
@@ -384,6 +393,7 @@ class SubmitQeAppWorkChainStep(ipw.VBox, WizardAppWidgetStep):
             self.pw_code.value = _get_code_uuid(codes["pw"])
             self.dos_code.value = _get_code_uuid(codes["dos"])
             self.projwfc_code.value = _get_code_uuid(codes["projwfc"])
+            #self.pp_code.value = _get_code_uuid(codes["pp"])
 
     def set_pdos_status(self):
         if "pdos" in self.input_parameters.get("workchain", {}).get("properties", []):
@@ -456,7 +466,7 @@ class SubmitQeAppWorkChainStep(ipw.VBox, WizardAppWidgetStep):
                     v["parallelization"] = orm.Dict(dict={"npool": npools})
                 if k == "projwfc":
                     v["settings"] = orm.Dict(dict={"cmdline": ["-nk", str(npools)]})
-                if k == "dos":
+                if k == "dos" or k=="pp":
                     v["metadata"]["options"]["resources"] = {
                         "num_machines": 1,
                         "num_mpiprocs_per_machine": min(

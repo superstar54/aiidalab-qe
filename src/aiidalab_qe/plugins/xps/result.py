@@ -30,7 +30,7 @@ def export_xps_data(outputs):
 
 
 def xps_spectra_broadening(
-    points, equivalent_sites_data, gamma=0.3, sigma=0.3, label="", intensity=1.0
+    points, equivalent_sites_data, gamma=0.3, sigma=0.3, label=""
 ):
     """Broadening the XPS spectra with Voigt function and return the spectra data"""
 
@@ -55,7 +55,7 @@ def xps_spectra_broadening(
         )
         for site in point:
             # Weight for the spectra of every atom
-            intensity = equivalent_sites_data[site]["multiplicity"] * intensity
+            intensity = equivalent_sites_data[site]["multiplicity"]
             relative_core_level_position = point[site]
             y = (
                 intensity
@@ -182,7 +182,6 @@ class Result(ResultPanel):
             equivalent_sites_data,
             gamma=gamma.value,
             sigma=sigma.value,
-            intensity=intensity.value,
         )
         # only plot the selected spectrum
         for site, d in spectra[spectrum_select.value].items():
@@ -204,7 +203,6 @@ class Result(ResultPanel):
                 equivalent_sites_data,
                 gamma=gamma.value,
                 sigma=sigma.value,
-                intensity=intensity.value,
             )
 
             for site, d in spectra[spectrum_select.value].items():
@@ -232,13 +230,26 @@ class Result(ResultPanel):
                         )
                 self.g.layout.barmode = "overlay"
                 self.g.layout.xaxis.title = xaxis
-            self.plot_experimental_data()
+            datasets = [dataset["name"] for dataset in self.g.data]
+            if (
+                self.experimental_data is not None
+                and "Experimental Data" not in datasets
+            ):
+                self.plot_experimental_data(intensity=intensity.value)
+
+        def response_exp_intensity(change):
+            new_intensity = intensity.value
+            y = self.experimental_data[:, 1] * new_intensity
+            with self.g.batch_update():
+                for index, dataset in enumerate(self.g.data):
+                    if dataset["name"] == "Experimental Data":
+                        self.g.data[index].y = y
 
         spectra_type.observe(response, names="value")
         spectrum_select.observe(response, names="value")
         gamma.observe(response, names="value")
         sigma.observe(response, names="value")
-        intensity.observe(response, names="value")
+        intensity.observe(response_exp_intensity, names="value")
         fill.observe(response, names="value")
         self.children = [
             spectra_type,
@@ -257,7 +268,7 @@ class Result(ResultPanel):
 
     def _handle_upload(self, change):
         """Process the uploaded experimental data file."""
-        import pandas as pd
+        import numpy as np
 
         uploaded_file = next(iter(change.new.values()))
         content = uploaded_file["content"]
@@ -265,14 +276,19 @@ class Result(ResultPanel):
 
         from io import StringIO
 
-        df = pd.read_csv(StringIO(content_str), header=None)
+        self.experimental_data = np.loadtxt(
+            StringIO(content_str), delimiter=",", converters=lambda i: np.float64(i)
+        )
+        self.plot_experimental_data(intensity=1)
 
-        self.experimental_data = df
-        self.plot_experimental_data()
-
-    def plot_experimental_data(self):
+    def plot_experimental_data(self, intensity):
         """Plot the experimental data alongside the calculated data."""
         if self.experimental_data is not None:
-            x = self.experimental_data[0]
-            y = self.experimental_data[1]
-            self.g.add_scatter(x=x, y=y, mode="lines", name="Experimental Data")
+            x = self.experimental_data[:, 0]
+            y = self.experimental_data[:, 1]
+            self.g.add_scatter(
+                x=x,
+                y=y * intensity,
+                mode="lines",
+                name="Experimental Data",
+            )

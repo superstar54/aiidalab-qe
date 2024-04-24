@@ -1,0 +1,30 @@
+
+### Visual regression test
+
+The visual regression test is similar to [ipywidgets](https://ipywidgets.readthedocs.io/en/latest/dev_testing.html).
+
+For the first time, one needs to install the dependence.
+
+```
+cd tests/visual_regression/
+npm install --global yarn
+yarn install
+```
+
+Then run in a terminal:
+
+```
+yarn start
+```
+
+In another terminal:
+
+```
+yarn test
+```
+
+If the snapshots need to be updated:
+
+```
+yarn test:update
+```

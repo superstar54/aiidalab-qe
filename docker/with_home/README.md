@@ -23,9 +23,9 @@ docker run --rm -it aiidalab/qe:amd64-latest /bin/bash
 
 ## Image size
 
+| Type         | Data Size | Start Time  |
+|--------------|-----------|-------------|
+| Compress     | 5.21 GB   | 12 s        |
+| No compress  | 6.4 GB    | 6 s         |
 
-5.21 GB, 12 s
-
-
-6.4 GB, 12 s
 

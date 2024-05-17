@@ -19,7 +19,7 @@ USER root
 # cd to /home/${NB_USER}, and tar home folder to /opt/home.tar
 # remove all files in /usr/local/bin/before-notebook.d
 # Rm all fils in /home/${NB_USER}, including hidden files
-RUN cd /home/${NB_USER} && tar -czf /opt/home.tar . && \
+RUN cd /home/${NB_USER} && tar -cf /opt/home.tar . && \
     rm -rf /usr/local/bin/before-notebook.d/* && \
     rm -rf /home/${NB_USER}/* /home/${NB_USER}/.[!.]*
 

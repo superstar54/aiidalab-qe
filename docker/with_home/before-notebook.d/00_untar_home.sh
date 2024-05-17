@@ -8,7 +8,7 @@ if [ ! -f /home/jovyan/.do_not_delete ]; then
   if [ -f /opt/home.tar ]; then
     # untar /opt/home.tar to /home/jovyan to restore home directory
     echo "Untarring /opt/home.tar to /home/jovyan"
-    tar -zxf /opt/home.tar -C /home/jovyan
+    tar -xf /opt/home.tar -C /home/jovyan
     # create a file `/home/jovyan/.do_not_delete` to indicate that home directory has been restored
     touch /home/jovyan/.do_not_delete
   fi

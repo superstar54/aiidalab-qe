@@ -83,3 +83,21 @@ def test_plugin_functionality(plugin_name):
     except Exception as e:
         return False, f"Failed to get entry points for package {plugin_name}: {e}"
     return True, ""
+
+def make_symlink_of_notebook(filename: str = "calculation_history.ipynb"):
+    """Create a symlink of the specified notebook in the current working directory."""
+    import importlib.resources
+    import pathlib
+    from aiidalab_qe import notebooks as notebooks_folder
+
+    package_notebooks_folder = importlib.resources.files(notebooks_folder)
+    notebook_link = package_notebooks_folder / filename
+
+    local_notebooks_folder = pathlib.Path.cwd()
+
+    local_notebook_link = local_notebooks_folder / filename
+
+    if notebook_link.exists():
+        if not local_notebook_link.exists():
+            local_notebook_link.symlink_to(notebook_link.resolve())
+

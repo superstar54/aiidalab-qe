@@ -163,6 +163,7 @@ class AppWrapperView(ipw.VBox):
         from aiidalab_qe.app.static import templates
         from aiidalab_qe.common.infobox import InfoBox
         from aiidalab_qe.version import __version__
+        from aiidalab_qe.app.utils import make_symlink_of_notebook
 
         #################################################
 
@@ -198,7 +199,9 @@ class AppWrapperView(ipw.VBox):
             tooltip="Learn about the app",
             disabled=True,
         )
-
+        # this will create a symlink to the notebook if the file does
+        # not exist in the current directory
+        make_symlink_of_notebook("calculation_history.ipynb")
         self.calculation_history_link = LinkButton(
             description="Calculation history",
             link="./calculation_history.ipynb",
@@ -206,6 +209,7 @@ class AppWrapperView(ipw.VBox):
             disabled=True,
         )
 
+        make_symlink_of_notebook("qe.ipynb")
         self.new_workchain_link = LinkButton(
             description="New calculation",
             link="./qe.ipynb",

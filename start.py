@@ -6,7 +6,7 @@ def get_start_widget(appbase, jupbase, notebase):  # noqa: ARG001
         <div class="app-container">
             <a
                 class="logo"
-                href="{appbase}/qe.ipynb"
+                href="{appbase}/src/aiidalab_qe/notebooks/qe.ipynb"
                 target="_blank"
             >
                 <img src="{appbase}/src/aiidalab_qe/app/static/images/logo.png" />
@@ -14,7 +14,7 @@ def get_start_widget(appbase, jupbase, notebase):  # noqa: ARG001
             <div class="features">
                 <a
                     class="feature"
-                    href="{appbase}/qe.ipynb"
+                    href="{appbase}/src/aiidalab_qe/notebooks/qe.ipynb"
                     target="_blank">
                     <img
                         class="feature-logo"
@@ -25,7 +25,7 @@ def get_start_widget(appbase, jupbase, notebase):  # noqa: ARG001
                 </a>
                 <a
                     class="feature"
-                    href="{appbase}/calculation_history.ipynb"
+                    href="{appbase}/src/aiidalab_qe/notebooks/calculation_history.ipynb"
                     target="_blank">
                     <img
                         class="feature-logo"
@@ -36,7 +36,7 @@ def get_start_widget(appbase, jupbase, notebase):  # noqa: ARG001
                 </a>
                 <a
                     class="feature"
-                    href="{appbase}/plugin_list.ipynb"
+                    href="{appbase}/src/aiidalab_qe/notebooks/plugin_list.ipynb"
                     target="_blank">
                     <img
                         class="feature-logo"
